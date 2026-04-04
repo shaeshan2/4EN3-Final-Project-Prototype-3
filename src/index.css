@@ -1,0 +1,47 @@
+@import 'tailwindcss';
+@import 'leaflet/dist/leaflet.css';
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: linear-gradient(165deg, #e8eef6 0%, #d4dce8 45%, #c5d0e0 100%);
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    'Helvetica Neue',
+    Arial,
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Leaflet container must have explicit height */
+.leaflet-container {
+  font-family: inherit;
+  border-radius: 1rem;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 12px;
+  box-shadow:
+    0 10px 25px -5px rgb(0 0 0 / 0.15),
+    0 4px 10px -4px rgb(0 0 0 / 0.1);
+}
+
+.leaflet-popup-content {
+  margin: 10px 12px;
+  line-height: 1.45;
+  font-size: 13px;
+}
+
+.coolroute-user-marker {
+  background: transparent !important;
+  border: none !important;
+}
