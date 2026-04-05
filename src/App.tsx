@@ -6,6 +6,7 @@ import { CoolRouteMap } from './components/CoolRouteMap'
 import { EnvironmentDashboard } from './components/EnvironmentDashboard'
 import { MapActionBar } from './components/MapActionBar'
 import { RecommendedAction, type RouteCardState } from './components/RecommendedAction'
+import { ZoneForecastSlider } from './components/ZoneForecastSlider'
 import { COOL_ZONES, USER_POSITION, USER_PROFILE, findZoneById } from './data/mockData'
 import { haversineMeters, straightLineRoute } from './lib/route'
 
@@ -81,6 +82,18 @@ function App() {
               onZoneSelect={handleZoneSelect}
             />
           </section>
+          {routeMeta && routeZoneId && (
+            <ZoneForecastSlider
+              key={routeZoneId}
+              zoneId={routeZoneId}
+              zoneKind={routeMeta.found.kind}
+              zoneTitle={
+                routeMeta.found.kind === 'cool'
+                  ? `Cool zone · ${routeMeta.found.zone.note}`
+                  : `Warm zone · ${routeMeta.found.zone.note}`
+              }
+            />
+          )}
           <MapActionBar emphasis={emphasis} onHeat={handleHeat} onCool={handleCool} onFindCoolest={handleFindCoolest} />
           <BottomSummary />
         </div>

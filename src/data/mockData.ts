@@ -119,6 +119,140 @@ export const BOTTOM_SUMMARY = {
   line3: 'Safer path recommended',
 } as const
 
+/** One anchor for the zone forecast slider — edit times & values per zone in `ZONE_FORECASTS`. */
+export type ForecastSample = {
+  hoursFromNow: number
+  temperatureC: number
+  condition: string
+  comfort: string
+  humidityPercent: number
+}
+
+/**
+ * Forecast anchors keyed by zone id. The UI slider interpolates between these points.
+ * Max time should match `FORECAST_SLIDER_MAX_HOURS`.
+ */
+export const ZONE_FORECASTS: Record<string, ForecastSample[]> = {
+  'cool-best': [
+    {
+      hoursFromNow: 0,
+      temperatureC: 24,
+      condition: 'Partly cloudy',
+      comfort: 'Cool & comfortable',
+      humidityPercent: 62,
+    },
+    {
+      hoursFromNow: 2,
+      temperatureC: 25,
+      condition: 'Mostly sunny',
+      comfort: 'Still pleasant',
+      humidityPercent: 58,
+    },
+    {
+      hoursFromNow: 4,
+      temperatureC: 27,
+      condition: 'Sunny',
+      comfort: 'Warming up',
+      humidityPercent: 55,
+    },
+    {
+      hoursFromNow: 6,
+      temperatureC: 29,
+      condition: 'Clear, bright',
+      comfort: 'Moderate heat',
+      humidityPercent: 52,
+    },
+  ],
+  'cool-b': [
+    { hoursFromNow: 0, temperatureC: 26, condition: 'Hazy sun', comfort: 'Moderate relief', humidityPercent: 64 },
+    { hoursFromNow: 2, temperatureC: 27, condition: 'Sunny', comfort: 'Warm', humidityPercent: 60 },
+    { hoursFromNow: 4, temperatureC: 29, condition: 'Hot sun', comfort: 'Less comfortable', humidityPercent: 56 },
+    { hoursFromNow: 6, temperatureC: 31, condition: 'Very sunny', comfort: 'High heat feel', humidityPercent: 53 },
+  ],
+  'cool-c': [
+    { hoursFromNow: 0, temperatureC: 25, condition: 'Light breeze', comfort: 'Pleasant', humidityPercent: 61 },
+    { hoursFromNow: 2, temperatureC: 26, condition: 'Fair', comfort: 'Comfortable', humidityPercent: 59 },
+    { hoursFromNow: 4, temperatureC: 28, condition: 'Sunny', comfort: 'Warm afternoon', humidityPercent: 56 },
+    { hoursFromNow: 6, temperatureC: 30, condition: 'Clear', comfort: 'Hot spell', humidityPercent: 54 },
+  ],
+  'hot-a': [
+    { hoursFromNow: 0, temperatureC: 38, condition: 'Intense sun', comfort: 'Very hot', humidityPercent: 48 },
+    { hoursFromNow: 2, temperatureC: 39, condition: 'Peak heat', comfort: 'Extreme exposure', humidityPercent: 46 },
+    { hoursFromNow: 4, temperatureC: 37, condition: 'Still hot', comfort: 'High risk', humidityPercent: 47 },
+    { hoursFromNow: 6, temperatureC: 34, condition: 'Softening light', comfort: 'Hot but easing', humidityPercent: 50 },
+  ],
+  'hot-b': [
+    { hoursFromNow: 0, temperatureC: 36, condition: 'Sunny', comfort: 'Hot', humidityPercent: 52 },
+    { hoursFromNow: 2, temperatureC: 37, condition: 'Very sunny', comfort: 'Very hot', humidityPercent: 50 },
+    { hoursFromNow: 4, temperatureC: 35, condition: 'Bright', comfort: 'Hot', humidityPercent: 51 },
+    { hoursFromNow: 6, temperatureC: 32, condition: 'Partly cloudy', comfort: 'Warm', humidityPercent: 54 },
+  ],
+}
+
+/** Slider max (hours). Keep final anchors near this value in `ZONE_FORECASTS`. */
+export const FORECAST_SLIDER_MAX_HOURS = 6
+
+export function getForecastSamplesForZone(zoneId: string): ForecastSample[] {
+  const custom = ZONE_FORECASTS[zoneId]
+  if (custom?.length) return custom
+  const found = findZoneById(zoneId)
+  if (!found) {
+    return [
+      {
+        hoursFromNow: 0,
+        temperatureC: 26,
+        condition: 'Fair',
+        comfort: 'Moderate',
+        humidityPercent: 60,
+      },
+      {
+        hoursFromNow: FORECAST_SLIDER_MAX_HOURS,
+        temperatureC: 28,
+        condition: 'Warm',
+        comfort: 'Warm',
+        humidityPercent: 55,
+      },
+    ]
+  }
+  const t0 = found.zone.temperatureC
+  if (found.kind === 'cool') {
+    return [
+      { hoursFromNow: 0, temperatureC: t0, condition: 'Current', comfort: found.zone.comfort, humidityPercent: 62 },
+      {
+        hoursFromNow: 3,
+        temperatureC: t0 + 2,
+        condition: 'Warming',
+        comfort: 'Less cool',
+        humidityPercent: 56,
+      },
+      {
+        hoursFromNow: FORECAST_SLIDER_MAX_HOURS,
+        temperatureC: t0 + 4,
+        condition: 'Much warmer',
+        comfort: 'Hotter than now',
+        humidityPercent: 52,
+      },
+    ]
+  }
+  return [
+    { hoursFromNow: 0, temperatureC: t0, condition: 'Current', comfort: found.zone.comfort, humidityPercent: 50 },
+    {
+      hoursFromNow: 3,
+      temperatureC: t0 - 1,
+      condition: 'Slight relief',
+      comfort: 'Still hot',
+      humidityPercent: 51,
+    },
+    {
+      hoursFromNow: FORECAST_SLIDER_MAX_HOURS,
+      temperatureC: t0 - 3,
+      condition: 'Cooling trend',
+      comfort: 'Warm',
+      humidityPercent: 54,
+    },
+  ]
+}
+
 export function findZoneById(
   id: string,
 ): { kind: 'hot'; zone: HotZone } | { kind: 'cool'; zone: CoolZone } | null {
