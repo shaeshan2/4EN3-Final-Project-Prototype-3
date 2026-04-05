@@ -12,6 +12,8 @@ type Props = {
   zoneTitle: string
   /** 'hot' | 'cool' for accent */
   zoneKind: 'hot' | 'cool' | null
+  /** Current map time slider — shifts fallback forecast baselines */
+  mapHoursFromNow: number
 }
 
 function tempHue(temp: number, minT: number, maxT: number): string {
@@ -23,10 +25,13 @@ function tempHue(temp: number, minT: number, maxT: number): string {
   return `${h} ${s}% ${l}%`
 }
 
-export function ZoneForecastSlider({ zoneId, zoneTitle, zoneKind }: Props) {
+export function ZoneForecastSlider({ zoneId, zoneTitle, zoneKind, mapHoursFromNow }: Props) {
   const [hours, setHours] = useState(0)
 
-  const samples = useMemo(() => (zoneId ? getForecastSamplesForZone(zoneId) : []), [zoneId])
+  const samples = useMemo(
+    () => (zoneId ? getForecastSamplesForZone(zoneId, mapHoursFromNow) : []),
+    [zoneId, mapHoursFromNow],
+  )
 
   const { minT, maxT } = useMemo(() => {
     if (!samples.length) return { minT: 20, maxT: 32 }

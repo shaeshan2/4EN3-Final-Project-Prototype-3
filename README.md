@@ -11,7 +11,9 @@ This repository is **frontend only**. There is no backend, authentication, datab
 - Centered **phone-style** shell with header (greeting, user label, search field), environment cards, and a highlighted **recommended action** panel.
 - **Interactive map** via [Leaflet](https://leafletjs.com/) / [React Leaflet](https://react-leaflet.js.org/) using **OpenStreetMap** raster tiles (not Google Maps).
 - **Hot** and **cool** zones as circle overlays with popups (temperature, comfort, notes).
-- **Walking route** polyline from the user to the recommended cool zone after **Find Coolest Area**.
+- **Map time** slider (always under the map) scrubs **0–6 hours ahead**; mock **timelines** can flip zones between warm and cool.
+- **Walking route** polyline to a tapped zone or after **Find Coolest Area** (uses the coolest tagged zone at the current map time).
+- **Per-zone forecast** slider (after selecting a zone) for extra mock detail.
 - Map controls: emphasize heat zones, emphasize cool zones, and run the “coolest area” flow.
 
 ---
@@ -79,6 +81,8 @@ src/
     EnvironmentDashboard.tsx
     RecommendedAction.tsx
     CoolRouteMap.tsx      # Map, zones, route polyline, popups
+    MapTimeSlider.tsx     # Global time under map — drives zone hot/cool timelines
+    ZoneForecastSlider.tsx
     MapActionBar.tsx
     BottomSummary.tsx
     icons.tsx
@@ -93,9 +97,9 @@ All editable demo content lives in **`src/data/mockData.ts`**:
 - **User profile** — greeting and username
 - **`USER_POSITION`** — map center and user marker (`[latitude, longitude]`)
 - **`DASHBOARD`** — temperature, condition, humidity, wind, heat-risk label
-- **`HOT_ZONES` / `COOL_ZONES`** — zone centers, radii (meters), popup copy; set **`isBest: true`** on one cool zone for the **Find Coolest Area** button
-- **Routes** — when you tap a zone or use **Find Coolest Area**, the app draws a **straight-line path** from **`USER_POSITION`** to that zone’s center (no external routing API)
-- **`ZONE_FORECASTS` / `FORECAST_SLIDER_MAX_HOURS`** — mock hourly anchors for the **forecast slider** after a zone is selected; add or edit entries per zone id
+- **`ZONE_TIMELINES`** — each map spot’s **`keyframes`** over **`MAP_TIME_SLIDER_MAX_HOURS`**; **`kind`** can switch between **`hot`** and **`cool`** so zones move between orange and cyan. Use **`isBest`** on a cool keyframe for **Find Coolest Area**
+- **Routes** — straight-line path from **`USER_POSITION`** to the tapped zone center (no routing API)
+- **`ZONE_FORECASTS` / `FORECAST_SLIDER_MAX_HOURS`** — per-zone forecast card anchors; fallbacks use **`findZoneByIdAtTime`** with the current map time
 - **`RECOMMENDATION_IDLE` / `RECOMMENDATION_ACTIVE`** — copy before vs after **Find Coolest Area**
 - **`BOTTOM_SUMMARY`** — footer strip text
 

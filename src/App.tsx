@@ -5,33 +5,42 @@ import type { MapEmphasis } from './components/CoolRouteMap'
 import { CoolRouteMap } from './components/CoolRouteMap'
 import { EnvironmentDashboard } from './components/EnvironmentDashboard'
 import { MapActionBar } from './components/MapActionBar'
+import { MapTimeSlider } from './components/MapTimeSlider'
 import { RecommendedAction, type RouteCardState } from './components/RecommendedAction'
 import { ZoneForecastSlider } from './components/ZoneForecastSlider'
-import { COOL_ZONES, USER_POSITION, USER_PROFILE, findZoneById } from './data/mockData'
+import {
+  USER_POSITION,
+  USER_PROFILE,
+  findZoneByIdAtTime,
+  getBestCoolZoneIdAtTime,
+  getZonesAtMapTime,
+} from './data/mockData'
 import { haversineMeters, straightLineRoute } from './lib/route'
 
 function App() {
   const [emphasis, setEmphasis] = useState<MapEmphasis>('default')
+  const [mapTimeHours, setMapTimeHours] = useState(0)
   /** Selected destination zone for the visible polyline */
   const [routeZoneId, setRouteZoneId] = useState<string | null>(null)
   /** When true, recommendation card uses “Find Coolest” copy instead of generic zone copy */
   const [coolestFlow, setCoolestFlow] = useState(false)
 
-  const bestCoolId = useMemo(() => COOL_ZONES.find((z) => z.isBest)?.id ?? COOL_ZONES[0]?.id ?? null, [])
+  const zonesAtTime = useMemo(() => getZonesAtMapTime(mapTimeHours), [mapTimeHours])
+  const bestCoolId = useMemo(() => getBestCoolZoneIdAtTime(mapTimeHours), [mapTimeHours])
 
   const routeMeta = useMemo(() => {
     if (!routeZoneId) return null
-    const found = findZoneById(routeZoneId)
+    const found = findZoneByIdAtTime(routeZoneId, mapTimeHours)
     if (!found) return null
     const dest = found.zone.center
     const positions = straightLineRoute(USER_POSITION, dest)
     const distanceM = haversineMeters(USER_POSITION, dest)
     return { found, positions, distanceM }
-  }, [routeZoneId])
+  }, [routeZoneId, mapTimeHours])
 
   const routeCardState: RouteCardState = useMemo(() => {
     if (!routeMeta) return { mode: 'idle' }
-    if (coolestFlow && routeZoneId === bestCoolId) {
+    if (coolestFlow && bestCoolId && routeZoneId === bestCoolId) {
       return { mode: 'coolest' }
     }
     const { kind, zone } = routeMeta.found
@@ -76,17 +85,20 @@ function App() {
             <h2 className="mb-2 text-left text-xs font-semibold uppercase tracking-wider text-slate-400">Map</h2>
             <CoolRouteMap
               emphasis={emphasis}
+              zones={zonesAtTime}
               routePositions={routeMeta?.positions ?? null}
               highlightedZoneId={routeZoneId}
               routeKind={routeMeta?.found.kind ?? null}
               onZoneSelect={handleZoneSelect}
             />
           </section>
+          <MapTimeSlider hoursFromNow={mapTimeHours} onChange={setMapTimeHours} />
           {routeMeta && routeZoneId && (
             <ZoneForecastSlider
               key={routeZoneId}
               zoneId={routeZoneId}
               zoneKind={routeMeta.found.kind}
+              mapHoursFromNow={mapTimeHours}
               zoneTitle={
                 routeMeta.found.kind === 'cool'
                   ? `Cool zone · ${routeMeta.found.zone.note}`

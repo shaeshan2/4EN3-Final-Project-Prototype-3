@@ -20,74 +20,304 @@ export const DASHBOARD = {
   heatRiskLabel: 'High Heat Exposure',
 } as const
 
-export type HotZone = {
-  id: string
-  center: [number, number]
-  radiusM: number
+/** Slider max for “time across the map” (hours from now). */
+export const MAP_TIME_SLIDER_MAX_HOURS = 6
+
+/** One keyframe in a zone’s timeline — kind can flip (cool ↔ hot) as hours advance. */
+export type ZoneTimeKeyframe = {
+  hoursFromNow: number
+  kind: 'hot' | 'cool'
   temperatureC: number
   comfort: string
   note: string
+  /** Only for cool keyframes; used by Find Coolest when kind is cool */
+  isBest?: boolean
 }
 
-export const HOT_ZONES: HotZone[] = [
+export type ZoneTimeline = {
+  id: string
+  center: [number, number]
+  radiusM: number
+  keyframes: ZoneTimeKeyframe[]
+}
+
+/**
+ * All map zones and how they evolve over `MAP_TIME_SLIDER_MAX_HOURS`.
+ * Edit keyframes to change when a place stops being cool / becomes hot, etc.
+ */
+export const ZONE_TIMELINES: ZoneTimeline[] = [
   {
     id: 'hot-a',
     center: [43.65445, -79.38455],
     radiusM: 130,
-    temperatureC: 38,
-    comfort: 'Very hot',
-    note: 'Open pavement, little shade',
+    keyframes: [
+      {
+        hoursFromNow: 0,
+        kind: 'hot',
+        temperatureC: 38,
+        comfort: 'Very hot',
+        note: 'Open pavement, little shade',
+      },
+      {
+        hoursFromNow: 2,
+        kind: 'hot',
+        temperatureC: 39,
+        comfort: 'Peak heat',
+        note: 'Afternoon sun',
+      },
+      {
+        hoursFromNow: 4,
+        kind: 'hot',
+        temperatureC: 37,
+        comfort: 'Still hot',
+        note: 'Slight shadow shift',
+      },
+      {
+        hoursFromNow: 6,
+        kind: 'cool',
+        temperatureC: 31,
+        comfort: 'Evening pocket',
+        note: 'Building shade — now reads as a cool zone',
+      },
+    ],
   },
   {
     id: 'hot-b',
     center: [43.65205, -79.38135],
     radiusM: 110,
-    temperatureC: 36,
-    comfort: 'Hot',
-    note: 'Sun-exposed plaza',
+    keyframes: [
+      {
+        hoursFromNow: 0,
+        kind: 'hot',
+        temperatureC: 36,
+        comfort: 'Hot',
+        note: 'Sun-exposed plaza',
+      },
+      {
+        hoursFromNow: 2,
+        kind: 'hot',
+        temperatureC: 37,
+        comfort: 'Very hot',
+        note: 'Peak plaza sun',
+      },
+      {
+        hoursFromNow: 4,
+        kind: 'hot',
+        temperatureC: 35,
+        comfort: 'Hot',
+        note: 'Still exposed',
+      },
+      {
+        hoursFromNow: 6,
+        kind: 'cool',
+        temperatureC: 28,
+        comfort: 'Shade returns',
+        note: 'Trees cover the plaza — now a cool zone',
+      },
+    ],
   },
-]
-
-export type CoolZone = {
-  id: string
-  center: [number, number]
-  radiusM: number
-  temperatureC: number
-  comfort: string
-  note: string
-  /** When true, this is the “best” destination for Find Coolest Area */
-  isBest: boolean
-}
-
-export const COOL_ZONES: CoolZone[] = [
   {
     id: 'cool-best',
     center: [43.65505, -79.38195],
     radiusM: 95,
-    temperatureC: 24,
-    comfort: 'Cool & comfortable',
-    note: 'Tree canopy + indoor cooling nearby',
-    isBest: true,
+    keyframes: [
+      {
+        hoursFromNow: 0,
+        kind: 'cool',
+        temperatureC: 24,
+        comfort: 'Cool & comfortable',
+        note: 'Tree canopy + indoor cooling nearby',
+        isBest: true,
+      },
+      {
+        hoursFromNow: 2,
+        kind: 'cool',
+        temperatureC: 26,
+        comfort: 'Still pleasant',
+        note: 'Warming slowly',
+        isBest: true,
+      },
+      {
+        hoursFromNow: 4,
+        kind: 'cool',
+        temperatureC: 28,
+        comfort: 'Warm but OK',
+        note: 'Less ideal — still coolest pocket nearby',
+        isBest: true,
+      },
+      {
+        hoursFromNow: 6,
+        kind: 'cool',
+        temperatureC: 29,
+        comfort: 'Mild evening',
+        note: 'Stays cooler than open pavement',
+        isBest: true,
+      },
+    ],
   },
   {
     id: 'cool-b',
     center: [43.65155, -79.38475],
     radiusM: 85,
-    temperatureC: 26,
-    comfort: 'Moderate relief',
-    note: 'Shaded walkway',
-    isBest: false,
+    keyframes: [
+      {
+        hoursFromNow: 0,
+        kind: 'cool',
+        temperatureC: 26,
+        comfort: 'Moderate relief',
+        note: 'Shaded walkway',
+      },
+      {
+        hoursFromNow: 2,
+        kind: 'cool',
+        temperatureC: 27,
+        comfort: 'Warming',
+        note: 'Shade thinning',
+      },
+      {
+        hoursFromNow: 4,
+        kind: 'hot',
+        temperatureC: 33,
+        comfort: 'Sun-struck',
+        note: 'No longer a cool zone — direct sun',
+      },
+      {
+        hoursFromNow: 6,
+        kind: 'hot',
+        temperatureC: 31,
+        comfort: 'Warm',
+        note: 'Evening, still warm concrete',
+      },
+    ],
   },
   {
     id: 'cool-c',
     center: [43.65385, -79.38045],
     radiusM: 75,
-    temperatureC: 25,
-    comfort: 'Pleasant',
-    note: 'Park edge, breezy',
-    isBest: false,
+    keyframes: [
+      {
+        hoursFromNow: 0,
+        kind: 'cool',
+        temperatureC: 25,
+        comfort: 'Pleasant',
+        note: 'Park edge, breezy',
+      },
+      {
+        hoursFromNow: 2,
+        kind: 'cool',
+        temperatureC: 26,
+        comfort: 'Comfortable',
+        note: 'Breeze holds',
+      },
+      {
+        hoursFromNow: 4,
+        kind: 'cool',
+        temperatureC: 28,
+        comfort: 'Warming',
+        note: 'Sun creeping in',
+      },
+      {
+        hoursFromNow: 6,
+        kind: 'hot',
+        temperatureC: 32,
+        comfort: 'Hot spell',
+        note: 'Open sky — now modeled as a warm zone',
+      },
+    ],
   },
 ]
+
+export type MapZone = {
+  id: string
+  center: [number, number]
+  radiusM: number
+  kind: 'hot' | 'cool'
+  temperatureC: number
+  comfort: string
+  note: string
+  isBest?: boolean
+}
+
+function pickKeyframeFields(k: ZoneTimeKeyframe): Omit<MapZone, 'id' | 'center' | 'radiusM'> {
+  const { kind, temperatureC, comfort, note, isBest } = k
+  return {
+    kind,
+    temperatureC,
+    comfort,
+    note,
+    ...(isBest !== undefined ? { isBest } : {}),
+  }
+}
+
+function round1(n: number) {
+  return Math.round(n * 10) / 10
+}
+
+export function resolveZoneAtTime(
+  tl: ZoneTimeline,
+  hoursFromNow: number,
+): Omit<MapZone, 'id' | 'center' | 'radiusM'> {
+  const k = [...tl.keyframes].sort((a, b) => a.hoursFromNow - b.hoursFromNow)
+  if (k.length === 0) {
+    return { kind: 'cool', temperatureC: 26, comfort: 'Moderate', note: 'Mock zone' }
+  }
+  const hMin = k[0].hoursFromNow
+  const hMax = k[k.length - 1].hoursFromNow
+  const h = Math.max(hMin, Math.min(hMax, hoursFromNow))
+
+  if (h <= k[0].hoursFromNow) return pickKeyframeFields(k[0])
+  if (h >= k[k.length - 1].hoursFromNow) return pickKeyframeFields(k[k.length - 1])
+
+  let i = 0
+  while (i < k.length - 1 && k[i + 1].hoursFromNow < h) i += 1
+  const a = k[i]
+  const b = k[i + 1]
+  const span = b.hoursFromNow - a.hoursFromNow
+  const t = span > 0 ? (h - a.hoursFromNow) / span : 0
+  const temperatureC = round1(a.temperatureC + (b.temperatureC - a.temperatureC) * t)
+  const useA = t < 0.5
+  const base: Omit<MapZone, 'id' | 'center' | 'radiusM'> = {
+    kind: useA ? a.kind : b.kind,
+    temperatureC,
+    comfort: useA ? a.comfort : b.comfort,
+    note: useA ? a.note : b.note,
+  }
+  const ib = useA ? a.isBest : b.isBest
+  if (ib !== undefined) return { ...base, isBest: ib }
+  return base
+}
+
+export function getZonesAtMapTime(hoursFromNow: number): MapZone[] {
+  return ZONE_TIMELINES.map((tl) => ({
+    id: tl.id,
+    center: tl.center,
+    radiusM: tl.radiusM,
+    ...resolveZoneAtTime(tl, hoursFromNow),
+  }))
+}
+
+export function getBestCoolZoneIdAtTime(hoursFromNow: number): string | null {
+  const cool = getZonesAtMapTime(hoursFromNow).filter((z) => z.kind === 'cool')
+  const tagged = cool.find((z) => z.isBest)
+  if (tagged) return tagged.id
+  if (cool.length === 0) return null
+  return cool.reduce((a, b) => (a.temperatureC <= b.temperatureC ? a : b)).id
+}
+
+export function findZoneByIdAtTime(
+  id: string,
+  hoursFromNow: number,
+): { kind: 'hot' | 'cool'; zone: MapZone } | null {
+  const tl = ZONE_TIMELINES.find((z) => z.id === id)
+  if (!tl) return null
+  const zone: MapZone = {
+    id: tl.id,
+    center: tl.center,
+    radiusM: tl.radiusM,
+    ...resolveZoneAtTime(tl, hoursFromNow),
+  }
+  return { kind: zone.kind, zone }
+}
 
 /** Routes are computed in the app as a straight-line path from `USER_POSITION` to the tapped zone center. */
 
@@ -98,11 +328,11 @@ export const RECOMMENDATION_IDLE = {
   destinationTempC: null as number | null,
   bullets: [
     'Shortest path is drawn from you to the zone you select',
-    'Orange zones are warmer; cyan zones are cooler',
+    'Use the time slider under the map to see zones change',
   ],
 } as const
 
-/** Card copy after “Find Coolest Area” — ties to COOL_ZONES isBest */
+/** Card copy after “Find Coolest Area” — ties to coolest zone at current map time */
 export const RECOMMENDATION_ACTIVE = {
   title: 'Recommended Action',
   directionHint: 'Move 200m northeast to reach a cooler area',
@@ -189,13 +419,13 @@ export const ZONE_FORECASTS: Record<string, ForecastSample[]> = {
   ],
 }
 
-/** Slider max (hours). Keep final anchors near this value in `ZONE_FORECASTS`. */
+/** Slider max (hours) for the per-zone forecast card. */
 export const FORECAST_SLIDER_MAX_HOURS = 6
 
-export function getForecastSamplesForZone(zoneId: string): ForecastSample[] {
+export function getForecastSamplesForZone(zoneId: string, mapHoursFromNow = 0): ForecastSample[] {
   const custom = ZONE_FORECASTS[zoneId]
   if (custom?.length) return custom
-  const found = findZoneById(zoneId)
+  const found = findZoneByIdAtTime(zoneId, mapHoursFromNow)
   if (!found) {
     return [
       {
@@ -251,14 +481,4 @@ export function getForecastSamplesForZone(zoneId: string): ForecastSample[] {
       humidityPercent: 54,
     },
   ]
-}
-
-export function findZoneById(
-  id: string,
-): { kind: 'hot'; zone: HotZone } | { kind: 'cool'; zone: CoolZone } | null {
-  const hot = HOT_ZONES.find((z) => z.id === id)
-  if (hot) return { kind: 'hot', zone: hot }
-  const cool = COOL_ZONES.find((z) => z.id === id)
-  if (cool) return { kind: 'cool', zone: cool }
-  return null
 }
