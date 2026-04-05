@@ -12,16 +12,129 @@ export const USER_PROFILE = {
 /** Current location marker & route start */
 export const USER_POSITION: [number, number] = [43.65325, -79.38305]
 
-export const DASHBOARD = {
-  temperatureC: 30,
-  condition: 'Sunny',
-  humidityPercent: 68,
-  windSpeedKmh: 14,
-  heatRiskLabel: 'High Heat Exposure',
-} as const
+/** One anchor for how the top “Environment” card reads at a map time. Edit `DASHBOARD_TIMELINE`. */
+export type DashboardKeyframe = {
+  hoursFromNow: number
+  temperatureC: number
+  condition: string
+  humidityPercent: number
+  /** Shown after the %, e.g. “Moderate” */
+  humidityLabel: string
+  windSpeedKmh: number
+  heatRiskLabel: string
+  /** Short line under comfort, e.g. “Limit outdoor time” */
+  comfortHint: string
+}
+
+/**
+ * User’s general environment vs map time (same 0–6h window as the map slider).
+ * Values interpolate between keyframes; text fields switch at segment midpoint.
+ */
+export const DASHBOARD_TIMELINE: DashboardKeyframe[] = [
+  {
+    hoursFromNow: 0,
+    temperatureC: 30,
+    condition: 'Sunny',
+    humidityPercent: 68,
+    humidityLabel: 'Moderate',
+    windSpeedKmh: 14,
+    heatRiskLabel: 'High Heat Exposure',
+    comfortHint: 'Limit outdoor time',
+  },
+  {
+    hoursFromNow: 2,
+    temperatureC: 33,
+    condition: 'Very sunny',
+    humidityPercent: 62,
+    humidityLabel: 'Moderate',
+    windSpeedKmh: 16,
+    heatRiskLabel: 'Extreme heat risk',
+    comfortHint: 'Avoid peak sun',
+  },
+  {
+    hoursFromNow: 4,
+    temperatureC: 34,
+    condition: 'Hot & clear',
+    humidityPercent: 58,
+    humidityLabel: 'Drier air',
+    windSpeedKmh: 18,
+    heatRiskLabel: 'Very high exposure',
+    comfortHint: 'Seek shade or AC',
+  },
+  {
+    hoursFromNow: 6,
+    temperatureC: 29,
+    condition: 'Partly cloudy',
+    humidityPercent: 64,
+    humidityLabel: 'Moderate',
+    windSpeedKmh: 12,
+    heatRiskLabel: 'Elevated heat',
+    comfortHint: 'Easier evening conditions',
+  },
+]
 
 /** Slider max for “time across the map” (hours from now). */
 export const MAP_TIME_SLIDER_MAX_HOURS = 6
+
+export type DashboardSnapshot = Omit<DashboardKeyframe, 'hoursFromNow'> & {
+  /** Query hour used (for labels) */
+  hoursFromNow: number
+}
+
+export function getDashboardAtMapTime(hoursFromNow: number): DashboardSnapshot {
+  const k = [...DASHBOARD_TIMELINE].sort((a, b) => a.hoursFromNow - b.hoursFromNow)
+  if (k.length === 0) {
+    return {
+      hoursFromNow: hoursFromNow,
+      temperatureC: 28,
+      condition: 'Fair',
+      humidityPercent: 60,
+      humidityLabel: 'Moderate',
+      windSpeedKmh: 14,
+      heatRiskLabel: 'Moderate',
+      comfortHint: 'Stay hydrated',
+    }
+  }
+  const hMin = k[0].hoursFromNow
+  const hMax = k[k.length - 1].hoursFromNow
+  const h = Math.max(hMin, Math.min(hMax, hoursFromNow))
+
+  if (h <= k[0].hoursFromNow) {
+    const a = k[0]
+    return { hoursFromNow: h, ...stripHours(a) }
+  }
+  if (h >= k[k.length - 1].hoursFromNow) {
+    const a = k[k.length - 1]
+    return { hoursFromNow: h, ...stripHours(a) }
+  }
+
+  let i = 0
+  while (i < k.length - 1 && k[i + 1].hoursFromNow < h) i += 1
+  const a = k[i]
+  const b = k[i + 1]
+  const span = b.hoursFromNow - a.hoursFromNow
+  const t = span > 0 ? (h - a.hoursFromNow) / span : 0
+  const temperatureC = round1(a.temperatureC + (b.temperatureC - a.temperatureC) * t)
+  const humidityPercent = Math.round(a.humidityPercent + (b.humidityPercent - a.humidityPercent) * t)
+  const windSpeedKmh = round1(a.windSpeedKmh + (b.windSpeedKmh - a.windSpeedKmh) * t)
+  const useA = t < 0.5
+  return {
+    hoursFromNow: h,
+    temperatureC,
+    humidityPercent,
+    windSpeedKmh,
+    condition: useA ? a.condition : b.condition,
+    humidityLabel: useA ? a.humidityLabel : b.humidityLabel,
+    heatRiskLabel: useA ? a.heatRiskLabel : b.heatRiskLabel,
+    comfortHint: useA ? a.comfortHint : b.comfortHint,
+  }
+}
+
+function stripHours(x: DashboardKeyframe): Omit<DashboardKeyframe, 'hoursFromNow'> {
+  const { hoursFromNow, ...rest } = x
+  void hoursFromNow
+  return rest
+}
 
 /** One keyframe in a zone’s timeline — kind can flip (cool ↔ hot) as hours advance. */
 export type ZoneTimeKeyframe = {

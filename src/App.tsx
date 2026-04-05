@@ -79,7 +79,7 @@ function App() {
         />
         <div className="relative flex max-h-[min(860px,calc(100svh-3rem))] flex-col overflow-y-auto overscroll-contain pb-1">
           <AppHeader greeting={USER_PROFILE.greeting} username={USER_PROFILE.username} />
-          <EnvironmentDashboard />
+          <EnvironmentDashboard mapHoursFromNow={mapTimeHours} />
           <RecommendedAction state={routeCardState} />
           <section className="px-4 pb-1 pt-1" aria-label="Map">
             <h2 className="mb-2 text-left text-xs font-semibold uppercase tracking-wider text-slate-400">Map</h2>

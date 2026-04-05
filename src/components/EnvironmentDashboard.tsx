@@ -1,8 +1,16 @@
-import { DASHBOARD } from '../data/mockData'
+import { useMemo } from 'react'
+import { getDashboardAtMapTime } from '../data/mockData'
+import { formatHoursLabel } from '../lib/forecast'
 import { IconAlertTriangle, IconDroplets, IconSun, IconWind } from './icons'
 
-export function EnvironmentDashboard() {
-  const { temperatureC, condition, humidityPercent, windSpeedKmh, heatRiskLabel } = DASHBOARD
+type Props = {
+  mapHoursFromNow: number
+}
+
+export function EnvironmentDashboard({ mapHoursFromNow }: Props) {
+  const d = useMemo(() => getDashboardAtMapTime(mapHoursFromNow), [mapHoursFromNow])
+
+  const timeLabel = mapHoursFromNow < 0.08 ? 'Now' : formatHoursLabel(mapHoursFromNow)
 
   return (
     <section className="px-4 pb-3" aria-label="Environment">
@@ -11,9 +19,9 @@ export function EnvironmentDashboard() {
       </h2>
       <div className="flex items-stretch gap-4 rounded-2xl bg-white/90 p-4 shadow-md shadow-slate-900/5 ring-1 ring-slate-200/80">
         <div className="flex min-w-0 flex-1 flex-col justify-center border-r border-slate-200/90 pr-4">
-          <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Now</p>
-          <p className="mt-0.5 text-4xl font-semibold tabular-nums tracking-tight text-slate-900">{temperatureC}°C</p>
-          <p className="mt-1 text-[15px] font-medium text-slate-600">{condition}</p>
+          <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">{timeLabel}</p>
+          <p className="mt-0.5 text-4xl font-semibold tabular-nums tracking-tight text-slate-900">{d.temperatureC}°C</p>
+          <p className="mt-1 text-[15px] font-medium text-slate-600">{d.condition}</p>
         </div>
         <div className="flex min-w-0 flex-1 flex-col justify-center gap-2.5 text-left">
           <div className="flex items-center gap-2.5">
@@ -22,7 +30,9 @@ export function EnvironmentDashboard() {
             </div>
             <div className="min-w-0">
               <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Humidity</p>
-              <p className="text-sm font-semibold tabular-nums text-slate-800">{humidityPercent}% · Moderate</p>
+              <p className="text-sm font-semibold tabular-nums text-slate-800">
+                {d.humidityPercent}% · {d.humidityLabel}
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-2.5">
@@ -31,9 +41,7 @@ export function EnvironmentDashboard() {
             </div>
             <div className="min-w-0">
               <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Wind</p>
-              <p className="text-sm font-semibold tabular-nums text-slate-800">
-                {windSpeedKmh} km/h
-              </p>
+              <p className="text-sm font-semibold tabular-nums text-slate-800">{d.windSpeedKmh} km/h</p>
             </div>
           </div>
           <div className="flex items-start gap-2.5">
@@ -42,10 +50,10 @@ export function EnvironmentDashboard() {
             </div>
             <div className="min-w-0">
               <p className="text-[10px] font-semibold uppercase tracking-wide text-rose-400">Comfort</p>
-              <p className="text-sm font-semibold leading-snug text-rose-900">{heatRiskLabel}</p>
+              <p className="text-sm font-semibold leading-snug text-rose-900">{d.heatRiskLabel}</p>
               <p className="mt-0.5 flex items-center gap-1 text-[11px] font-medium text-rose-700/90">
                 <IconSun className="h-3 w-3 shrink-0" />
-                Limit outdoor time
+                {d.comfortHint}
               </p>
             </div>
           </div>

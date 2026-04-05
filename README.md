@@ -96,7 +96,7 @@ All editable demo content lives in **`src/data/mockData.ts`**:
 
 - **User profile** — greeting and username
 - **`USER_POSITION`** — map center and user marker (`[latitude, longitude]`)
-- **`DASHBOARD`** — temperature, condition, humidity, wind, heat-risk label
+- **`DASHBOARD_TIMELINE`** — keyframes for the top **Environment** card; temperature, humidity, wind, and comfort text track the **map time** slider (interpolated between anchors)
 - **`ZONE_TIMELINES`** — each map spot’s **`keyframes`** over **`MAP_TIME_SLIDER_MAX_HOURS`**; **`kind`** can switch between **`hot`** and **`cool`** so zones move between orange and cyan. Use **`isBest`** on a cool keyframe for **Find Coolest Area**
 - **Routes** — straight-line path from **`USER_POSITION`** to the tapped zone center (no routing API)
 - **`ZONE_FORECASTS` / `FORECAST_SLIDER_MAX_HOURS`** — per-zone forecast card anchors; fallbacks use **`findZoneByIdAtTime`** with the current map time
