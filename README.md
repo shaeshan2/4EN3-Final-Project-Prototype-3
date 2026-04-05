@@ -93,8 +93,8 @@ All editable demo content lives in **`src/data/mockData.ts`**:
 - **User profile** — greeting and username
 - **`USER_POSITION`** — map center and user marker (`[latitude, longitude]`)
 - **`DASHBOARD`** — temperature, condition, humidity, wind, heat-risk label
-- **`HOT_ZONES` / `COOL_ZONES`** — zone centers, radii (meters), popup copy; set **`isBest: true`** on one cool zone for the recommended destination
-- **`ROUTE_COORDINATES`** — polyline from the user to that destination (keep coordinates consistent with the chosen zone)
+- **`HOT_ZONES` / `COOL_ZONES`** — zone centers, radii (meters), popup copy; set **`isBest: true`** on one cool zone for the **Find Coolest Area** button
+- **Routes** — when you tap a zone or use **Find Coolest Area**, the app draws a **straight-line path** from **`USER_POSITION`** to that zone’s center (no external routing API)
 - **`RECOMMENDATION_IDLE` / `RECOMMENDATION_ACTIVE`** — copy before vs after **Find Coolest Area**
 - **`BOTTOM_SUMMARY`** — footer strip text
 

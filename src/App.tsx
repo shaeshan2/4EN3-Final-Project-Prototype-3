@@ -1,25 +1,61 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { AppHeader } from './components/AppHeader'
 import { BottomSummary } from './components/BottomSummary'
 import type { MapEmphasis } from './components/CoolRouteMap'
 import { CoolRouteMap } from './components/CoolRouteMap'
 import { EnvironmentDashboard } from './components/EnvironmentDashboard'
 import { MapActionBar } from './components/MapActionBar'
-import { RecommendedAction } from './components/RecommendedAction'
-import { COOL_ZONES, USER_PROFILE } from './data/mockData'
+import { RecommendedAction, type RouteCardState } from './components/RecommendedAction'
+import { COOL_ZONES, USER_POSITION, USER_PROFILE, findZoneById } from './data/mockData'
+import { haversineMeters, straightLineRoute } from './lib/route'
 
 function App() {
   const [emphasis, setEmphasis] = useState<MapEmphasis>('default')
-  const [navigationActive, setNavigationActive] = useState(false)
+  /** Selected destination zone for the visible polyline */
+  const [routeZoneId, setRouteZoneId] = useState<string | null>(null)
+  /** When true, recommendation card uses “Find Coolest” copy instead of generic zone copy */
+  const [coolestFlow, setCoolestFlow] = useState(false)
 
   const bestCoolId = useMemo(() => COOL_ZONES.find((z) => z.isBest)?.id ?? COOL_ZONES[0]?.id ?? null, [])
+
+  const routeMeta = useMemo(() => {
+    if (!routeZoneId) return null
+    const found = findZoneById(routeZoneId)
+    if (!found) return null
+    const dest = found.zone.center
+    const positions = straightLineRoute(USER_POSITION, dest)
+    const distanceM = haversineMeters(USER_POSITION, dest)
+    return { found, positions, distanceM }
+  }, [routeZoneId])
+
+  const routeCardState: RouteCardState = useMemo(() => {
+    if (!routeMeta) return { mode: 'idle' }
+    if (coolestFlow && routeZoneId === bestCoolId) {
+      return { mode: 'coolest' }
+    }
+    const { kind, zone } = routeMeta.found
+    return {
+      mode: 'zone',
+      kind,
+      tempC: zone.temperatureC,
+      distanceM: routeMeta.distanceM,
+    }
+  }, [routeMeta, coolestFlow, routeZoneId, bestCoolId])
 
   const handleHeat = () => setEmphasis('heat')
   const handleCool = () => setEmphasis('cool')
   const handleFindCoolest = () => {
-    setEmphasis('cool')
-    setNavigationActive(true)
+    if (bestCoolId) {
+      setEmphasis('cool')
+      setRouteZoneId(bestCoolId)
+      setCoolestFlow(true)
+    }
   }
+
+  const handleZoneSelect = useCallback((zoneId: string) => {
+    setRouteZoneId(zoneId)
+    setCoolestFlow(false)
+  }, [])
 
   return (
     <div className="flex min-h-svh items-start justify-center py-6 sm:items-center sm:py-10">
@@ -34,13 +70,15 @@ function App() {
         <div className="relative flex max-h-[min(860px,calc(100svh-3rem))] flex-col overflow-y-auto overscroll-contain pb-1">
           <AppHeader greeting={USER_PROFILE.greeting} username={USER_PROFILE.username} />
           <EnvironmentDashboard />
-          <RecommendedAction navigationActive={navigationActive} />
+          <RecommendedAction state={routeCardState} />
           <section className="px-4 pb-1 pt-1" aria-label="Map">
             <h2 className="mb-2 text-left text-xs font-semibold uppercase tracking-wider text-slate-400">Map</h2>
             <CoolRouteMap
               emphasis={emphasis}
-              showRoute={navigationActive}
-              highlightedCoolId={navigationActive ? bestCoolId : null}
+              routePositions={routeMeta?.positions ?? null}
+              highlightedZoneId={routeZoneId}
+              routeKind={routeMeta?.found.kind ?? null}
+              onZoneSelect={handleZoneSelect}
             />
           </section>
           <MapActionBar emphasis={emphasis} onHeat={handleHeat} onCool={handleCool} onFindCoolest={handleFindCoolest} />

@@ -89,23 +89,16 @@ export const COOL_ZONES: CoolZone[] = [
   },
 ]
 
-/** Polyline from USER_POSITION → recommended cool zone (edit to match map) */
-export const ROUTE_COORDINATES: [number, number][] = [
-  [43.65325, -79.38305],
-  [43.65355, -79.38265],
-  [43.6541, -79.38235],
-  [43.65455, -79.38215],
-  [43.65505, -79.38195],
-]
+/** Routes are computed in the app as a straight-line path from `USER_POSITION` to the tapped zone center. */
 
 /** Card copy before “Find Coolest Area” */
 export const RECOMMENDATION_IDLE = {
   title: 'Recommended Action',
-  directionHint: 'Tap “Find Coolest Area” for a safer route',
+  directionHint: 'Tap a warm or cool zone, or use “Find Coolest Area”',
   destinationTempC: null as number | null,
   bullets: [
-    'We will highlight the coolest nearby zone',
-    'A walking route will appear on the map',
+    'Shortest path is drawn from you to the zone you select',
+    'Orange zones are warmer; cyan zones are cooler',
   ],
 } as const
 
@@ -125,3 +118,13 @@ export const BOTTOM_SUMMARY = {
   line2: 'Estimated heat exposure reduced by 20%',
   line3: 'Safer path recommended',
 } as const
+
+export function findZoneById(
+  id: string,
+): { kind: 'hot'; zone: HotZone } | { kind: 'cool'; zone: CoolZone } | null {
+  const hot = HOT_ZONES.find((z) => z.id === id)
+  if (hot) return { kind: 'hot', zone: hot }
+  const cool = COOL_ZONES.find((z) => z.id === id)
+  if (cool) return { kind: 'cool', zone: cool }
+  return null
+}

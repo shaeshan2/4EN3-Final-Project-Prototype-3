@@ -1,25 +1,29 @@
 import L from 'leaflet'
 import { useMemo } from 'react'
 import { Circle, MapContainer, Marker, Polyline, Popup, TileLayer } from 'react-leaflet'
-import { COOL_ZONES, HOT_ZONES, ROUTE_COORDINATES, USER_POSITION } from '../data/mockData'
+import { COOL_ZONES, HOT_ZONES, USER_POSITION } from '../data/mockData'
 
 export type MapEmphasis = 'default' | 'heat' | 'cool'
 
 type Props = {
   emphasis: MapEmphasis
-  showRoute: boolean
-  highlightedCoolId: string | null
+  routePositions: [number, number][] | null
+  /** When set, that zone’s circle is emphasized */
+  highlightedZoneId: string | null
+  /** Route color follows destination zone kind */
+  routeKind: 'hot' | 'cool' | null
+  onZoneSelect: (zoneId: string) => void
 }
 
-function hotStyle(emphasis: MapEmphasis) {
-  const strong = emphasis === 'heat'
-  const dim = emphasis === 'cool'
+function hotStyle(emphasis: MapEmphasis, highlighted: boolean) {
+  const strong = emphasis === 'heat' || highlighted
+  const dim = emphasis === 'cool' && !highlighted
   return {
-    color: strong ? '#ea580c' : '#f97316',
-    weight: strong ? 3 : 2,
+    color: highlighted ? '#c2410c' : strong ? '#ea580c' : '#f97316',
+    weight: highlighted ? 4 : strong ? 3 : 2,
     opacity: dim ? 0.35 : strong ? 0.95 : 0.75,
     fillColor: '#fb923c',
-    fillOpacity: dim ? 0.12 : strong ? 0.5 : 0.28,
+    fillOpacity: dim ? 0.12 : highlighted ? 0.52 : strong ? 0.5 : 0.28,
   }
 }
 
@@ -37,7 +41,13 @@ function coolStyle(emphasis: MapEmphasis, highlighted: boolean) {
 
 const MAP_CENTER: [number, number] = [USER_POSITION[0], USER_POSITION[1]]
 
-export function CoolRouteMap({ emphasis, showRoute, highlightedCoolId }: Props) {
+export function CoolRouteMap({
+  emphasis,
+  routePositions,
+  highlightedZoneId,
+  routeKind,
+  onZoneSelect,
+}: Props) {
   const userIcon = useMemo(
     () =>
       L.divIcon({
@@ -59,6 +69,8 @@ export function CoolRouteMap({ emphasis, showRoute, highlightedCoolId }: Props) 
     [],
   )
 
+  const lineColor = routeKind === 'hot' ? '#ea580c' : '#2563eb'
+
   return (
     <div className="relative h-[280px] w-full overflow-hidden rounded-2xl ring-1 ring-slate-200/80">
       <MapContainer
@@ -72,22 +84,42 @@ export function CoolRouteMap({ emphasis, showRoute, highlightedCoolId }: Props) 
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        {HOT_ZONES.map((z) => (
-          <Circle key={z.id} center={z.center} radius={z.radiusM} pathOptions={hotStyle(emphasis)}>
-            <Popup>
-              <div className="min-w-[160px] text-slate-800">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-orange-600">Hot zone</p>
-                <p className="mt-1 text-lg font-bold tabular-nums">{z.temperatureC}°C</p>
-                <p className="text-[13px] font-medium">{z.comfort}</p>
-                <p className="mt-1 text-[12px] text-slate-600">{z.note}</p>
-              </div>
-            </Popup>
-          </Circle>
-        ))}
-        {COOL_ZONES.map((z) => {
-          const hi = highlightedCoolId === z.id
+        {HOT_ZONES.map((z) => {
+          const hi = highlightedZoneId === z.id
           return (
-            <Circle key={z.id} center={z.center} radius={z.radiusM} pathOptions={coolStyle(emphasis, hi)}>
+            <Circle
+              key={z.id}
+              center={z.center}
+              radius={z.radiusM}
+              pathOptions={hotStyle(emphasis, hi)}
+              eventHandlers={{
+                click: () => onZoneSelect(z.id),
+              }}
+            >
+              <Popup>
+                <div className="min-w-[160px] text-slate-800">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-orange-600">Hot zone</p>
+                  <p className="mt-1 text-lg font-bold tabular-nums">{z.temperatureC}°C</p>
+                  <p className="text-[13px] font-medium">{z.comfort}</p>
+                  <p className="mt-1 text-[12px] text-slate-600">{z.note}</p>
+                  <p className="mt-2 text-[11px] font-medium text-slate-500">Tap the circle for shortest path here</p>
+                </div>
+              </Popup>
+            </Circle>
+          )
+        })}
+        {COOL_ZONES.map((z) => {
+          const hi = highlightedZoneId === z.id
+          return (
+            <Circle
+              key={z.id}
+              center={z.center}
+              radius={z.radiusM}
+              pathOptions={coolStyle(emphasis, hi)}
+              eventHandlers={{
+                click: () => onZoneSelect(z.id),
+              }}
+            >
               <Popup>
                 <div className="min-w-[160px] text-slate-800">
                   <p className="text-[11px] font-semibold uppercase tracking-wide text-cyan-600">Cool zone</p>
@@ -99,16 +131,17 @@ export function CoolRouteMap({ emphasis, showRoute, highlightedCoolId }: Props) 
                       Recommended destination
                     </p>
                   )}
+                  <p className="mt-2 text-[11px] font-medium text-slate-500">Tap the circle for shortest path here</p>
                 </div>
               </Popup>
             </Circle>
           )
         })}
-        {showRoute && (
+        {routePositions && routePositions.length >= 2 && (
           <Polyline
-            positions={ROUTE_COORDINATES}
+            positions={routePositions}
             pathOptions={{
-              color: '#2563eb',
+              color: lineColor,
               weight: 5,
               opacity: 0.92,
               lineCap: 'round',
